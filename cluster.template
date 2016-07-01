@@ -1,0 +1,113 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "LambCI build servers running on ECS",
+  "Resources": {
+    "Cluster": {
+      "Type" : "AWS::ECS::Cluster"
+    },
+    "BuildTask": {
+      "Type" : "AWS::ECS::TaskDefinition",
+      "Properties" : {
+        "ContainerDefinitions" : [{
+          "Name": "build",
+          "Image": "lambci/ecs",
+          "Memory": 500,
+          "LogConfiguration": {
+            "LogDriver": "awslogs",
+            "Options": {
+              "awslogs-group": {"Ref" : "EcsLogs"},
+              "awslogs-region": {"Ref" : "AWS::Region"}
+            }
+          },
+          "Environment": [{"Name": "LOG_GROUP", "Value": {"Ref" : "EcsLogs"}}],
+          "MountPoints": [{"SourceVolume": "docker-socket", "ContainerPath": "/var/run/docker.sock"}]
+        }],
+        "Volumes" : [{"Name": "docker-socket", "Host": {"SourcePath": "/var/run/docker.sock"}}]
+      }
+    },
+    "EcsLogs": {
+      "Type" : "AWS::Logs::LogGroup"
+    },
+    "AutoScalingGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "AvailabilityZones": {"Fn::GetAZs": ""},
+        "LaunchConfigurationName": {"Ref": "LaunchConfig"},
+        "DesiredCapacity": "1",
+        "MinSize": "0",
+        "MaxSize": "4"
+      },
+      "CreationPolicy": {
+        "ResourceSignal": {
+          "Count": "1"
+        }
+      }
+    },
+    "LaunchConfig": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "ImageId": "ami-a88a46c5",
+        "IamInstanceProfile": {"Ref" : "InstanceProfile"},
+        "InstanceType": "t2.micro",
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": ["", [
+              "#!/bin/bash\n",
+              "echo ECS_CLUSTER=", {"Ref": "Cluster"}, " >> /etc/ecs/ecs.config\n",
+              "/opt/aws/bin/cfn-signal -e $? --resource AutoScalingGroup --stack ", {"Ref": "AWS::StackName"}, " --region ", {"Ref": "AWS::Region"}
+            ]]
+          }
+        }
+      }
+    },
+    "InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [{"Ref": "InstanceRole"}]
+      }
+    },
+    "InstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": {
+            "Effect": "Allow",
+            "Principal": {"Service": "ec2.amazonaws.com"},
+            "Action": "sts:AssumeRole"
+          }
+        },
+        "Policies": [{
+          "PolicyName": "RunEcs",
+          "PolicyDocument": {
+            "Statement": {
+              "Effect": "Allow",
+              "Action": [
+                "ecs:DeregisterContainerInstance",
+                "ecs:DiscoverPollEndpoint",
+                "ecs:Poll",
+                "ecs:RegisterContainerInstance",
+                "ecs:StartTelemetrySession",
+                "ecs:Submit*"
+              ],
+              "Resource": "*"
+            }
+          }
+        },{
+          "PolicyName": "WriteLogs",
+          "PolicyDocument": {
+            "Statement": {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": "*"
+            }
+          }
+        }]
+      }
+    }
+  }
+}
+
