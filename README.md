@@ -28,7 +28,7 @@ permissions something like this:
 
 This block should be added as part of the `LambdaExecution > Properties > Policies` section of the `lambci` template.
 
-Where you replace the resource with the name of the ECS task definition created in your `lambci-ecs` stack.
+Replace the `Resource` value with the name of the ECS task definition created in your `lambci-ecs` stack.
 
 Then in the project you want to build using ECS, you'll need to ensure the following LambCI config settings are given:
 
