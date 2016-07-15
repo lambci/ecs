@@ -15,11 +15,18 @@ permissions something like this:
 
 ```json
 {
-  "Effect": "Allow",
-  "Action": "ecs:RunTask",
-  "Resource": "arn:aws:ecs:*:*:task-definition/lambci-ecs-BuildTask-1PVABCDEFKFT"
+  "PolicyName": "LambCIECS",
+  "PolicyDocument": {
+    "Statement": {
+      "Effect": "Allow",
+      "Action": "ecs:RunTask",
+      "Resource": "arn:aws:ecs:*:*:task-definition/lambci-ecs-BuildTask-1PVABCDEFKFT"
+    }
+  }
 }
 ```
+
+This block should be added as part of the `LambdaExecution > Properties > Policies` section of the `lambci` template.
 
 Where you replace the resource with the name of the ECS task definition created in your `lambci-ecs` stack.
 
