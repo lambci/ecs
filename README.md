@@ -8,7 +8,7 @@ launch the `cluster.template` file in CloudFormation and give your stack a name 
 This will create an auto-scaling group and an ECS cluster and task definition,
 which you can find in the AWS console from `Services > EC2 Container Service`
 
-LambCI will automatically send builds to the ECS stack if a `Dockerfile.test` is present in the root of the repository.
+LambCI-ECS will look for a `Dockerfile.test` is in the root of the repository. This is where you put your test/build instructions.
 
 ## LambCI configuration
 
