@@ -26,11 +26,12 @@ cleanup() {
   if [ $EXIT_STATUS -eq 0 ]; then
     echo "Build #${LAMBCI_BUILD_NUM} successful" | tee "$LOG_FILE"
     github_status success "Build #${LAMBCI_BUILD_NUM} successful"
-    slack_status good "Build #${LAMBCI_BUILD_NUM} successful"
+    slack_status good "Build #${LAMBCI_BUILD_NUM} successful" '' "Success: ${LAMBCI_REPO} #${LAMBCI_BUILD_NUM}"
   else
     echo "Build #${LAMBCI_BUILD_NUM} failed" | tee "$LOG_FILE"
     github_status failure "Build #${LAMBCI_BUILD_NUM} failed"
-    slack_status danger "Build #${LAMBCI_BUILD_NUM} failed" "$(json_escape "\`\`\`$(tail -60 "$LOG_FILE")\`\`\`")"
+    slack_status danger "Build #${LAMBCI_BUILD_NUM} failed" "$(json_escape "\`\`\`$(tail -60 "$LOG_FILE")\`\`\`")" \
+       "Failed: ${LAMBCI_REPO} #${LAMBCI_BUILD_NUM}"
   fi
 }
 
@@ -61,7 +62,7 @@ slack_status() {
   "color": "'"$1"'",
   "title": "'"$2"'",
   "title_link": "'"$(aws_log_url)"'",
-  "fallback": "'"$2"'",
+  "fallback": "'"${4:-$2}"'",
   '"$STATUS_TEXT"'
   "fields": [{
     "title": "Repository",
