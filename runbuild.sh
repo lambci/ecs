@@ -11,8 +11,9 @@ docker build --pull -f "$LAMBCI_DOCKER_FILE" -t $LAMBCI_DOCKER_TAG $LAMBCI_DOCKE
 
 set +x
 
-# Pass all env vars (except HOME) through to docker run
-ENV_ARGS=$(env | cut -d= -f 1 | grep -v '^HOME$' | awk '{print "-e "$1}')
+# Pass a filtered list of env vars through to docker run
+# TODO: Does it even make sense to have this feature?
+ENV_ARGS=$(node ${SCRIPT_DIR}/filterEnv "$LAMBCI_DOCKER_FILE" | awk '{print "-e "$1}')
 
 set -x
 
