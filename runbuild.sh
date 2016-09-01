@@ -11,8 +11,8 @@ docker build --pull -f "$LAMBCI_DOCKER_FILE" -t $LAMBCI_DOCKER_TAG $LAMBCI_DOCKE
 
 set +x
 
-# Pass all env vars (except HOME) through to docker run
-ENV_ARGS=$(env | cut -d= -f 1 | grep -v '^HOME$' | awk '{print "-e "$1}')
+# Pass all env vars (except HOME and PATH) through to docker run
+ENV_ARGS=$(env | cut -d= -f 1 | grep -v '^HOME$' | grep -v '^PATH$' | awk '{print "-e "$1}')
 
 set -x
 
