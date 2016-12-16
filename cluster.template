@@ -7,6 +7,24 @@
       "Type": "String",
       "Default": "t2.micro",
       "ConstraintDescription": "must be a valid EC2 instance type."
+    },
+
+	"VpcId" : {
+      "Type" : "AWS::EC2::VPC::Id",
+      "Description" : "VpcId of your existing Virtual Private Cloud (VPC)",
+      "ConstraintDescription" : "must be the VPC Id of an existing Virtual Private Cloud."
+    },
+
+	"Subnets" : {
+      "Type" : "List<AWS::EC2::Subnet::Id>",
+      "Description" : "The list of SubnetIds in your Virtual Private Cloud (VPC)",
+      "ConstraintDescription" : "must be a list of an existing subnets in the selected Virtual Private Cloud."
+    },
+
+	"AZs" : {
+      "Type" : "List<AWS::EC2::AvailabilityZone::Name>",
+      "Description" : "The list of AvailabilityZones for your Virtual Private Cloud (VPC)",
+      "ConstraintDescription" : "must be a list if valid EC2 availability zones for the selected Virtual Private Cloud"
     }
   },
   "Mappings": {
@@ -51,7 +69,8 @@
     "AutoScalingGroup": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
-        "AvailabilityZones": {"Fn::GetAZs": ""},
+        "AvailabilityZones": {"Ref": "AZs"},
+        "VPCZoneIdentifier" : { "Ref" : "Subnets" },
         "LaunchConfigurationName": {"Ref": "LaunchConfig"},
         "DesiredCapacity": "1",
         "MinSize": "0",
@@ -66,9 +85,11 @@
     "LaunchConfig": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Properties": {
+		"AssociatePublicIpAddress" : "true",
         "ImageId": {"Fn::FindInMap": ["EcsAmisByRegion", {"Ref": "AWS::Region"}, "ami"]},
         "IamInstanceProfile": {"Ref": "InstanceProfile"},
         "InstanceType": {"Ref": "InstanceType"},
+		"SecurityGroups" : [ { "Ref" : "InstanceSecurityGroup" } ],
         "UserData": {
           "Fn::Base64": {
             "Fn::Join": ["", [
@@ -79,6 +100,16 @@
             ]]
           }
         }
+      }
+    },
+	"InstanceSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTP access and SSH access",
+        "VpcId" : { "Ref" : "VpcId" },
+        "SecurityGroupIngress" : [
+          { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0" }
+        ]
       }
     },
     "InstanceProfile": {
@@ -131,4 +162,3 @@
     }
   }
 }
-
