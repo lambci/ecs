@@ -2,6 +2,7 @@
 
 More documentation should be coming soon, but to get up and running quickly,
 launch the `cluster.template` file in CloudFormation and give your stack a name like `lambci-ecs`.
+You can also use `cluster.spot.template` to use ECS under Spot Instances.
 
 (You should have already created a LambCI stack as documented at https://github.com/lambci/lambci)
 
@@ -49,3 +50,4 @@ Then in the project you want to build using ECS, you'll need to ensure the follo
 ![Example cluster and task location](http://i.imgur.com/DKgcdBU.png)
 
 These are normal LambCI config settings which you can set in your `.lambci.js[on]` file or in the config DB.
+
