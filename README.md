@@ -17,14 +17,11 @@ permissions something like this:
 
 ```json
 {
-  "PolicyName": "LambCIECS",
-  "PolicyDocument": {
     "Statement": {
       "Effect": "Allow",
       "Action": "ecs:RunTask",
       "Resource": "arn:aws:ecs:*:*:task-definition/lambci-ecs-BuildTask-1PVABCDEFKFT"
     }
-  }
 }
 ```
 
