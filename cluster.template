@@ -39,7 +39,10 @@
               "awslogs-region": {"Ref": "AWS::Region"}
             }
           },
-          "Environment": [{"Name": "LOG_GROUP", "Value": {"Ref": "EcsLogs"}}],
+          "Environment": [
+            {"Name": "LOG_GROUP", "Value": {"Ref": "EcsLogs"}},
+            {"Name": "AWS_REGION","Value": {"Ref": "AWS::Region"}}
+           ],
           "MountPoints": [{"SourceVolume": "docker-socket", "ContainerPath": "/var/run/docker.sock"}]
         }],
         "Volumes": [{"Name": "docker-socket", "Host": {"SourcePath": "/var/run/docker.sock"}}]
