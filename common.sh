@@ -12,7 +12,8 @@ export LAMBCI_CLONE_REPO="${LAMBCI_CLONE_REPO:-$LAMBCI_REPO}"
 export LAMBCI_CHECKOUT_BRANCH="${LAMBCI_CHECKOUT_BRANCH:-$LAMBCI_BRANCH}"
 export LAMBCI_DOCKER_CMD="${LAMBCI_DOCKER_CMD:-$SCRIPT_DIR/runbuild.sh}"
 export LAMBCI_DOCKER_FILE="${LAMBCI_DOCKER_FILE:-Dockerfile.test}"
-export LAMBCI_DOCKER_TAG=${"${LAMBCI_DOCKER_TAG:-lambci-ecs-${LAMBCI_REPO}:${LAMBCI_COMMIT}}",,}
+export LAMBCI_DOCKER_TAG="${LAMBCI_DOCKER_TAG:-lambci-ecs-${LAMBCI_REPO}:${LAMBCI_COMMIT}}"
+export LAMBCI_DOCKER_TAG=${LAMBCI_DOCKER_TAG,,} # to lower case
 
 export CONTAINER_ID=$(cat /proc/self/cgroup | grep "cpu:/" | sed 's/\([0-9]\):cpu:\/docker\///g')
 
