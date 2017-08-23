@@ -15,9 +15,11 @@ permissions something like this:
 
 ```json
 {
-  "Effect": "Allow",
-  "Action": "ecs:RunTask",
-  "Resource": "arn:aws:ecs:*:*:task-definition/lambci-ecs-BuildTask-1PVABCDEFKFT"
+  "Statement": {
+    "Effect": "Allow",
+    "Action": "ecs:RunTask",
+    "Resource": "arn:aws:ecs:*:*:task-definition/lambci-ecs-BuildTask-1PVABCDEFKFT"
+   }
 }
 ```
 
