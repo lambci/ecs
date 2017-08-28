@@ -20,6 +20,8 @@ export LOG_FILE="${SCRIPT_DIR}/lambci.log"
 export LOG_GROUP="${LOG_GROUP:-/lambci/ecs}"
 export LOG_STREAM="${LOG_STREAM:-$CONTAINER_ID}"
 
+export STACK="${STACK:-lambci}"
+
 cleanup() {
   EXIT_STATUS=$1
 
@@ -41,7 +43,7 @@ github_status() {
   "state": "'"$1"'",
   "description": "'"$2"'",
   "target_url": "'"$(aws_log_url)"'",
-  "context": "continuous-integration/lambci"
+  "context": "continuous-integration/'"${STACK}"'"
 }'
 }
 
