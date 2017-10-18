@@ -5,7 +5,7 @@
     "InstanceType": {
       "Description": "EC2 instance type (t2.micro, t2.medium, t2.large, etc)",
       "Type": "String",
-      "Default": "t2.micro",
+      "Default": "t2.medium",
       "ConstraintDescription": "must be a valid EC2 instance type."
     }
   },
@@ -34,7 +34,7 @@
         "ContainerDefinitions": [{
           "Name": "build",
           "Image": "lambci/ecs",
-          "Memory": 450,
+          "Memory": 800,
           "LogConfiguration": {
             "LogDriver": "awslogs",
             "Options": {
@@ -75,6 +75,7 @@
         "ImageId": {"Fn::FindInMap": ["EcsAmisByRegion", {"Ref": "AWS::Region"}, "ami"]},
         "IamInstanceProfile": {"Ref": "InstanceProfile"},
         "InstanceType": {"Ref": "InstanceType"},
+        "KeyName": "charter-auto-tools-dev",
         "UserData": {
           "Fn::Base64": {
             "Fn::Join": ["", [
@@ -131,6 +132,181 @@
               ],
               "Resource": "*"
             }
+          }
+        },{
+          "PolicyName": "S3FullAccess",
+          "PolicyDocument": {
+            "Statement": {
+              "Effect": "Allow",
+              "Action": [
+                "s3:*"
+              ],
+              "Resource": "*"
+            }
+          }
+        },{
+          "PolicyName": "SSMFullAccess",
+          "PolicyDocument": {
+            "Statement": {
+              "Effect": "Allow",
+              "Action": [
+                  "cloudwatch:PutMetricData",
+                  "ds:CreateComputer",
+                  "ds:DescribeDirectories",
+                  "ec2:DescribeInstanceStatus",
+                  "logs:*",
+                  "ssm:*",
+                  "ec2messages:*"
+              ],
+              "Resource": "*"
+            }
+          }
+        },{
+          "PolicyName": "SNSAccess",
+          "PolicyDocument": {
+            "Statement": {
+              "Action": [
+                  "sns:Publish",
+                  "sns:Subscribe",
+                  "sns:Unsubscribe",
+                  "sns:CreateTopic"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          }
+          },{
+          "PolicyName": "ServerlessDeploy",
+          "PolicyDocument": {
+            "Statement": [{
+                "Effect": "Allow",
+                "Action": [
+                    "cloudformation:Describe*",
+                    "cloudformation:List*",
+                    "cloudformation:Get*",
+                    "cloudformation:PreviewStackUpdate",
+                    "cloudformation:CreateStack",
+                    "cloudformation:UpdateStack"
+                ],
+                "Resource": "arn:aws:cloudformation:us-east-1:070164343874:stack/*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "cloudformation:ValidateTemplate"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "logs:DescribeLogGroups"
+                ],
+                "Resource": "arn:aws:logs:us-east-1:070164343874:log-group::log-stream:*"
+            },
+            {
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:DeleteLogGroup",
+                    "logs:DeleteLogStream",
+                    "logs:DescribeLogStreams",
+                    "logs:FilterLogEvents"
+                ],
+                "Resource": "arn:aws:logs:us-east-1:070164343874:log-group:/aws/lambda/*:log-stream:*",
+                "Effect": "Allow"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:GetRole",
+                    "iam:PassRole",
+                    "iam:CreateRole",
+                    "iam:DeleteRole",
+                    "iam:DetachRolePolicy",
+                    "iam:PutRolePolicy",
+                    "iam:AttachRolePolicy",
+                    "iam:DeleteRolePolicy"
+                ],
+                "Resource": [
+                    "arn:aws:iam::070164343874:role/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "apigateway:GET",
+                    "apigateway:POST",
+                    "apigateway:PUT",
+                    "apigateway:DELETE"
+                ],
+                "Resource": [
+                    "arn:aws:apigateway:us-east-1::/restapis"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "apigateway:GET",
+                    "apigateway:POST",
+                    "apigateway:PUT",
+                    "apigateway:DELETE"
+                ],
+                "Resource": [
+                    "arn:aws:apigateway:us-east-1::/restapis/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "lambda:GetFunction",
+                    "lambda:CreateFunction",
+                    "lambda:DeleteFunction",
+                    "lambda:UpdateFunctionConfiguration",
+                    "lambda:UpdateFunctionCode",
+                    "lambda:ListVersionsByFunction",
+                    "lambda:PublishVersion",
+                    "lambda:CreateAlias",
+                    "lambda:DeleteAlias",
+                    "lambda:UpdateAlias",
+                    "lambda:GetFunctionConfiguration",
+                    "lambda:AddPermission",
+                    "lambda:RemovePermission",
+                    "lambda:InvokeFunction"
+                ],
+                "Resource": [
+                    "arn:aws:lambda:*:070164343874:function:*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeVpcs"
+                ],
+                "Resource": [
+                    "*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "events:Put*",
+                    "events:Remove*",
+                    "events:Delete*",
+                    "events:Describe*"
+                ],
+                "Resource": "arn:aws:events::070164343874:rule/*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "kms:Decrypt"
+                ],
+                "Resource": "arn:aws:kms:us-east-1:070164343874:key/410336a4-d7de-4b41-a32f-1425155ee22a"
+            }
+          ]
           }
         }]
       }
