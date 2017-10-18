@@ -57,14 +57,19 @@ A future improvement would be whenever lambci/lambci Lambda function calls ecs.r
 If you want to use an image other than lambci/ecs, the steps to upload a new image are described here: http://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-ecr-image.html
 
 ## Deploy stack
+Before deploying the stack, you need to update parameters.json with:
+- The ARN of the Lambda Function that sends Hipchat notification
+- The Name of the IAM Role associated with the Lambda Function that runs LambCi
+These values should be updated in parameters.json.
+
 Execute:
 ```
 # New stack:
-$ aws cloudformation create-stack --stack-name [STACK-NAME] --template-body file://cluster.template --capabilities CAPABILITY_IAM
+$ aws cloudformation create-stack --stack-name [STACK-NAME] --template-body file://cluster.template --capabilities CAPABILITY_IAM --parameters file://parameters.json
 
 # View updates to stack without applying changes:
-$ aws cloudformation deploy --stack-name [STACK-NAME] --template-file cluster.template --capabilities CAPABILITY_IAM --no-execute-changeset
+$ aws cloudformation deploy --stack-name [STACK-NAME] --template-file cluster.template --capabilities CAPABILITY_IAM --no-execute-changeset --parameter-override file://parameters.json
 
 # Update existing stack:
-$ aws cloudformation deploy --stack-name [STACK-NAME] --template-file cluster.template --capabilities CAPABILITY_IAM
+$ aws cloudformation deploy --stack-name [STACK-NAME] --template-file cluster.template --capabilities CAPABILITY_IAM --parameter-override file://parameters.json
 ```

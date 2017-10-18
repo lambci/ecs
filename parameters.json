@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "LambdaHipChatNotificationARN",
+    "ParameterValue": "[ARN-LAMBDA-NOTIFIES-HIPCHAT]"
+  },
+  {
+    "ParameterKey": "LambCILambdaExecutionIAMRoleName",
+    "ParameterValue": "[NAME-IAM-ROLE-LAMBDA-CI-EXECUTION]"
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "t2.medium"
+  },
+  {
+    "ParameterKey": "KeyName",
+    "ParameterValue": "charter-auto-tools-dev"
+  },
+  {
+    "ParameterKey": "LogSubscriptionFilterPattern",
+    "ParameterValue": "Build"
+  }
+]
