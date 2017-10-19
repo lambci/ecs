@@ -2,11 +2,26 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "LambCI build servers running on ECS",
   "Parameters": {
+    "LambdaHipChatNotificationARN": {
+      "Description" : "ARN of Lambda function that sends build results to Hipchat. Used as subscriber of ECS log group.",
+      "Type" : "String"
+    },
+    "LambCILambdaExecutionIAMRoleName": {
+      "Description" : "ARN of IAM role used for Lambda execution of LambCI Lambda. Required to update with permissiona to run ECS task.",
+      "Type" : "String"
+    },
     "InstanceType": {
       "Description": "EC2 instance type (t2.micro, t2.medium, t2.large, etc)",
       "Type": "String",
-      "Default": "t2.micro",
-      "ConstraintDescription": "must be a valid EC2 instance type."
+      "ConstraintDescription": "Must be a valid EC2 instance type."
+    },
+    "KeyName": {
+      "Description": "Name of the pem file to allow SSH access to the EC2 instance hosting ECS.",
+      "Type": "String"
+    },
+    "LogSubscriptionFilterPattern": {
+      "Description" : "Pattern used to identify log messages that should trigger subscription.",
+      "Type" : "String"
     }
   },
   "Mappings": {
@@ -34,7 +49,7 @@
         "ContainerDefinitions": [{
           "Name": "build",
           "Image": "lambci/ecs",
-          "Memory": 450,
+          "Memory": 800,
           "LogConfiguration": {
             "LogDriver": "awslogs",
             "Options": {
@@ -54,13 +69,34 @@
     "EcsLogs": {
       "Type": "AWS::Logs::LogGroup"
     },
+    "LambdaInvokePermission": {
+    	"Type": "AWS::Lambda::Permission",
+    	"Properties": {
+    		"FunctionName": {"Ref": "LambdaHipChatNotificationARN"},
+    		"Action": "lambda:InvokeFunction",
+    		"Principal": "logs.amazonaws.com"
+    	}
+    },
+    "LogSubscription": {
+      "Type": "AWS::Logs::SubscriptionFilter",
+      "Properties" : {
+        "DestinationArn": {"Ref": "LambdaHipChatNotificationARN"},
+        "FilterPattern": {"Ref": "LogSubscriptionFilterPattern"},
+        "LogGroupName": {"Ref": "EcsLogs"}
+      }
+    },
     "AutoScalingGroup": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
         "AvailabilityZones": {"Fn::GetAZs": ""},
         "LaunchConfigurationName": {"Ref": "LaunchConfig"},
+        "Tags": [{
+           "Key" : "Name",
+           "Value" : "lambci-ecs",
+           "PropagateAtLaunch" : "true"
+        }],
         "DesiredCapacity": "1",
-        "MinSize": "0",
+        "MinSize": "1",
         "MaxSize": "4"
       },
       "CreationPolicy": {
@@ -75,6 +111,7 @@
         "ImageId": {"Fn::FindInMap": ["EcsAmisByRegion", {"Ref": "AWS::Region"}, "ami"]},
         "IamInstanceProfile": {"Ref": "InstanceProfile"},
         "InstanceType": {"Ref": "InstanceType"},
+        "KeyName": {"Ref": "KeyName"},
         "UserData": {
           "Fn::Base64": {
             "Fn::Join": ["", [
@@ -92,6 +129,27 @@
       "Properties": {
         "Path": "/",
         "Roles": [{"Ref": "InstanceRole"}]
+      }
+    },
+    "LambdaIAMExecutionECSTask": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "lambci-ECS-runTask",
+        "PolicyDocument": {
+           "Version": "2012-10-17",
+           "Statement": [
+             {
+                "Effect": "Allow",
+                "Action": [
+                    "ecs:RunTask"
+                ],
+                "Resource": [
+                    {"Ref": "BuildTask"}
+                ]
+              }
+           ]
+        },
+        "Roles": [ { "Ref": "LambCILambdaExecutionIAMRoleName" } ]
       }
     },
     "InstanceRole": {
@@ -131,6 +189,192 @@
               ],
               "Resource": "*"
             }
+          }
+        },{
+          "PolicyName": "S3FullAccess",
+          "PolicyDocument": {
+            "Statement": {
+              "Effect": "Allow",
+              "Action": [
+                "s3:*"
+              ],
+              "Resource": "*"
+            }
+          }
+        },{
+          "PolicyName": "SSMFullAccess",
+          "PolicyDocument": {
+            "Statement": {
+              "Effect": "Allow",
+              "Action": [
+                  "cloudwatch:PutMetricData",
+                  "ds:CreateComputer",
+                  "ds:DescribeDirectories",
+                  "ec2:DescribeInstanceStatus",
+                  "logs:*",
+                  "ssm:*",
+                  "ec2messages:*"
+              ],
+              "Resource": "*"
+            }
+          }
+        },{
+          "PolicyName": "SNSAccess",
+          "PolicyDocument": {
+            "Statement": {
+              "Action": [
+                  "sns:Publish",
+                  "sns:Subscribe",
+                  "sns:Unsubscribe",
+                  "sns:CreateTopic"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          }
+          },{
+            "PolicyName": "Route53HostedZoneCustomClient",
+            "PolicyDocument": {
+              "Statement": {
+                "Action": [
+                   "route53:ChangeResourceRecordSets"
+                 ],
+                 "Resource": "arn:aws:route53:::hostedzone/Z2W2661D5OIUGH",
+                 "Effect": "Allow"
+              }
+             }
+          },{
+          "PolicyName": "ServerlessDeploy",
+          "PolicyDocument": {
+            "Statement": [{
+                "Effect": "Allow",
+                "Action": [
+                    "cloudformation:Describe*",
+                    "cloudformation:List*",
+                    "cloudformation:Get*",
+                    "cloudformation:PreviewStackUpdate",
+                    "cloudformation:CreateStack",
+                    "cloudformation:UpdateStack"
+                ],
+                "Resource": "arn:aws:cloudformation:us-east-1:070164343874:stack/*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "cloudformation:ValidateTemplate"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "logs:DescribeLogGroups"
+                ],
+                "Resource": "arn:aws:logs:us-east-1:070164343874:log-group::log-stream:*"
+            },
+            {
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:DeleteLogGroup",
+                    "logs:DeleteLogStream",
+                    "logs:DescribeLogStreams",
+                    "logs:FilterLogEvents"
+                ],
+                "Resource": "arn:aws:logs:us-east-1:070164343874:log-group:/aws/lambda/*:log-stream:*",
+                "Effect": "Allow"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:GetRole",
+                    "iam:PassRole",
+                    "iam:CreateRole",
+                    "iam:DeleteRole",
+                    "iam:DetachRolePolicy",
+                    "iam:PutRolePolicy",
+                    "iam:AttachRolePolicy",
+                    "iam:DeleteRolePolicy"
+                ],
+                "Resource": [
+                    "arn:aws:iam::070164343874:role/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "apigateway:GET",
+                    "apigateway:POST",
+                    "apigateway:PUT",
+                    "apigateway:DELETE"
+                ],
+                "Resource": [
+                    "arn:aws:apigateway:us-east-1::/restapis"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "apigateway:GET",
+                    "apigateway:POST",
+                    "apigateway:PUT",
+                    "apigateway:DELETE"
+                ],
+                "Resource": [
+                    "arn:aws:apigateway:us-east-1::/restapis/*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "lambda:GetFunction",
+                    "lambda:CreateFunction",
+                    "lambda:DeleteFunction",
+                    "lambda:UpdateFunctionConfiguration",
+                    "lambda:UpdateFunctionCode",
+                    "lambda:ListVersionsByFunction",
+                    "lambda:PublishVersion",
+                    "lambda:CreateAlias",
+                    "lambda:DeleteAlias",
+                    "lambda:UpdateAlias",
+                    "lambda:GetFunctionConfiguration",
+                    "lambda:AddPermission",
+                    "lambda:RemovePermission",
+                    "lambda:InvokeFunction"
+                ],
+                "Resource": [
+                    "arn:aws:lambda:*:070164343874:function:*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeVpcs"
+                ],
+                "Resource": [
+                    "*"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "events:Put*",
+                    "events:Remove*",
+                    "events:Delete*",
+                    "events:Describe*"
+                ],
+                "Resource": "arn:aws:events::070164343874:rule/*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "kms:Decrypt"
+                ],
+                "Resource": "arn:aws:kms:us-east-1:070164343874:key/410336a4-d7de-4b41-a32f-1425155ee22a"
+            }
+          ]
           }
         }]
       }
