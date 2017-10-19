@@ -233,6 +233,17 @@
             }
           }
           },{
+            "PolicyName": "Route53HostedZoneCustomClient",
+            "PolicyDocument": {
+              "Statement": {
+                "Action": [
+                   "route53:ChangeResourceRecordSets"
+                 ],
+                 "Resource": "arn:aws:route53:::hostedzone/Z2W2661D5OIUGH",
+                 "Effect": "Allow"
+              }
+             }
+          },{
           "PolicyName": "ServerlessDeploy",
           "PolicyDocument": {
             "Statement": [{
