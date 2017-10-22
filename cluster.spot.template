@@ -9,6 +9,11 @@
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
 
+	"SpotPrice" : {
+      "Type" : Number,
+      "Description" : "Spot Price based on your EC2 type",
+    },
+
 	"VpcId" : {
       "Type" : "AWS::EC2::VPC::Id",
       "Description" : "VpcId of your existing Virtual Private Cloud (VPC)",
@@ -29,17 +34,14 @@
   },
   "Mappings": {
     "EcsAmisByRegion": {
-      "us-east-1": {"ami": "ami-275ffe31"},
-      "us-east-2": {"ami": "ami-62745007"},
-      "us-west-1": {"ami": "ami-689bc208"},
-      "us-west-2": {"ami": "ami-62d35c02"},
-      "eu-west-1": {"ami": "ami-95f8d2f3"},
-      "eu-west-2": {"ami": "ami-bf9481db"},
-      "eu-central-1": {"ami": "ami-085e8a67"},
-      "ap-northeast-1": {"ami": "ami-f63f6f91"},
-      "ap-southeast-1": {"ami": "ami-b4ae1dd7"},
-      "ap-southeast-2": {"ami": "ami-fbe9eb98"},
-      "ca-central-1": {"ami": "ami-ee58e58a"}
+      "us-east-1": {"ami": "ami-a88a46c5"},
+      "us-west-1": {"ami": "ami-34a7e354"},
+      "us-west-2": {"ami": "ami-ae0acdce"},
+      "eu-west-1": {"ami": "ami-ccd942bf"},
+      "eu-central-1": {"ami": "ami-4a5eb625"},
+      "ap-northeast-1": {"ami": "ami-4aab5d2b"},
+      "ap-southeast-1": {"ami": "ami-24c71547"},
+      "ap-southeast-2": {"ami": "ami-0bf2da68"}
     }
   },
   "Resources": {
@@ -60,10 +62,7 @@
               "awslogs-region": {"Ref": "AWS::Region"}
             }
           },
-          "Environment": [
-            {"Name": "LOG_GROUP", "Value": {"Ref": "EcsLogs"}},
-            {"Name": "AWS_REGION", "Value": {"Ref": "AWS::Region"}}
-           ],
+          "Environment": [{"Name": "LOG_GROUP", "Value": {"Ref": "EcsLogs"}}],
           "MountPoints": [{"SourceVolume": "docker-socket", "ContainerPath": "/var/run/docker.sock"}]
         }],
         "Volumes": [{"Name": "docker-socket", "Host": {"SourcePath": "/var/run/docker.sock"}}]
@@ -92,6 +91,7 @@
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Properties": {
 		"AssociatePublicIpAddress" : "true",
+    "SpotPrice": { "Ref" : "SpotPrice" },
         "ImageId": {"Fn::FindInMap": ["EcsAmisByRegion", {"Ref": "AWS::Region"}, "ami"]},
         "IamInstanceProfile": {"Ref": "InstanceProfile"},
         "InstanceType": {"Ref": "InstanceType"},
